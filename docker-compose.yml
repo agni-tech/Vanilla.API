@@ -1,0 +1,53 @@
+version: "3"
+name: leilao
+services:
+  leilao-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: Vanilla@123
+      MSSQL_DB: LeilaoDB
+      MSSQL_USER: db
+      MSSQL_PASSWORD: 123456
+    ports:
+      - "1443:1433"
+    volumes:
+      - mssqldata:/var/opt/mssql
+      - ./extras/db/entrypoint.sh:/entrypoint.sh
+      - ./extras/db/db-init.sh:/db-init.sh
+      - ./extras/db/db-init.sql:/db-init.sql
+    command: /bin/bash ./entrypoint.sh
+    labels:
+      type: "leilao"
+  api:
+    build:
+        context: ./src
+        dockerfile: Dockerfile
+    container_name: api
+    depends_on:
+      - leilao-sqlserver
+    environment:
+      ASPNET_VERSION: "7.0"
+      DOTNET_VERSION: "7.0"
+      ASPNETCORE_ENVIRONMENT: Development
+      APP_CONNECTIONSTRING: "Server=sqlserver;Database=LeilaoDB;User Id=sa;Password=Vanilla@123;Application Name=Leilao;MultipleActiveResultSets=True;Encrypt=False;"
+      APP_SECRET_TOKEN_SECURITYKEY: "fedaf7d8863b48e197b9287d492b708e"
+      APP_SECRET_REDEMET: "iHoAVATNc9Npbuek149rgH3Ehue7r7TvH1nSm7bm"
+      APP_LOCALE : "pt-BR"
+      LINK_SITE: "https://localhost"
+      LINK_ZIPCODE: "https://viacep.com.br/ws/{cep}/json/"
+      LINK_REDEMET: "https://api-redemet.decea.mil.br/aerodromos/info"
+      EMAIL_SMTP: "smtp.elasticemail.com"
+      EMAIL_FROM: "leilao@hgsistemas.com.br"
+      EMAIL_PWD: "B7B2C1759ACDFB190AE95CB55A3DF4BB1670"
+      EMAIL_CREDENCIAL: "leilao@hgsistemas.com.br"
+      EMAIL_PORT: 2525
+      EMAIL_SSL: true
+     
+    ports:
+      - "8080:80"
+      - "8002:443"
+
+volumes:
+    mssqldata:
